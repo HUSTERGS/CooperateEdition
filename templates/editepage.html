@@ -13,6 +13,19 @@
 
 <body>
     <textarea type="text" id="editearea"></textarea>
+    <script>
+        var changeset = new Object()
+        changeset.actions = new Array()
+        doc = document.querySelector('textarea')
+        doc.addEventListener('input', e => {
+            changeset.actions.push({
+                type: e.inputType.slice(0, 6),
+                content: e.data,
+                index: doc.selectionStart
+            })
+        })
+
+    </script>
 </body>
 
 </html>
