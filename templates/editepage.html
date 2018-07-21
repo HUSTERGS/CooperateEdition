@@ -16,6 +16,7 @@
     <script>
         var changeset = new Object()
         changeset.actions = new Array()
+        changeset.localversion = 0
         doc = document.querySelector('textarea')
         doc.addEventListener('input', e => {
             changeset.actions.push({
@@ -23,8 +24,25 @@
                 content: e.data,
                 index: doc.selectionStart
             })
+            console.log(changeset.actions)
+            console.log(JSON.stringify(changeset))
         })
 
+
+        function sendData(changeset) {
+            if (changeset.actions.length !== 0) {
+                fetch('/merge', {
+                    method: 'POST',
+                    body: JSON.stringify(changeset)
+                }).then(res => {
+                    console.log(res)
+                    changeset.actions = new Array()
+                })
+            }
+        }
+        setInterval(function () {
+            sendData(changeset)
+        }, 2000)
     </script>
 </body>
 
