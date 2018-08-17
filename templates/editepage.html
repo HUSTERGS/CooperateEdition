@@ -29,14 +29,27 @@
         })
 
 
+        //请求版本号
+        function rqversion() {
+            fetch('/root/first trial/requestversion', {
+                method: 'GET'
+            }).then(res => res.json().then(data => {
+                console.log(data)
+                changeset.localversion = Number(data)
+                console.log(changeset.localversion)
+            }))
+        }
+
+        rqversion()
         function sendData(changeset) {
             if (changeset.actions.length !== 0) {
-                fetch('/merge', {
+                fetch('/root/first trial/merge', {
                     method: 'POST',
                     body: JSON.stringify(changeset)
                 }).then(res => {
                     console.log(res)
                     changeset.actions = new Array()
+                    changeset.localversion++
                 })
             }
         }
