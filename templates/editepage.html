@@ -28,51 +28,61 @@
             //console.log(JSON.stringify(changeset))
         })
 
+        window.addEventListener("load", function () {
+            rqversion()
+            rqnewestdoc()
+        })
+        //请求最新版本
+        function rqnewestdoc() {
+            fetch('/root/first trial/rqnewestdoc', {
+                method: 'GET'
+            }).then(res => res.json().then(data => {
+                doc.value = data
+            }))
+        }
 
         //请求版本号
         function rqversion() {
             fetch('/root/first trial/requestversion', {
                 method: 'GET'
-            }).then(res => res.json().then(data => {
+            }).then(res2 => res2.json().then(data => {
                 //console.log(data)
                 changeset.version = Number(data)
-                //console.log(changeset.version)
+                console.log(changeset.version)
             }))
         }
 
-        rqversion()
         //发送changeset
         function sendData(changeset) {
             if (changeset.actions.length !== 0) {
+                console.log(changeset.actions)
                 fetch('/root/first trial/merge', {
                     method: 'POST',
                     body: JSON.stringify(changeset)
                 }).then(res => res.json().then(data => {
                     //console.log(data)
-                    console.log(changeset.actions)
-                    console.log(data)
-                    console.log(changeset.actions === [])
-                    if (changeset.actions === []) {
-                        console.log(",,,,,,")
-                        doc.value = localApply(data, doc.value)
-                        console.log(localApply(data, doc.value))
-                    }
+                    //if (changeset.actions === []) {
+                    doc.value = localApply(data, doc.value)
+                    //}
                 }))
                 changeset.actions = new Array()
                 changeset.localversion++
             }
+            else
+                rqnewestdoc()
 
         }
 
-        function localApply(actions, doc) {
+        function localApply(actions, temp) {
             console.log("mmmm")
+            text = temp
             actions.forEach(element => {
-                console.log(element)
                 if (element.type = 'insert')
-                    doc = doc.slice(0, element.index) + element.content + doc.slice(element.index)
+                    text = text.slice(0, element.index) + element.content + text.slice(element.index)
                 else if (element.type = 'delete')
-                    doc = doc.slice(0, element.index - 1) + doc.slice(element.index)
+                    text = text.slice(0, element.index - 1) + text.slice(element.index)
             });
+            return text
         }
 
         function localFollow(actionA, actionB) {
@@ -130,7 +140,7 @@
 
         setInterval(function () {
             sendData(changeset)
-        }, 2000)
+        }, 500)
     </script>
 </body>
 

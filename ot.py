@@ -24,8 +24,12 @@ def Action(type, content, index):
 
 def follow(actionA, actionB):
     if actionA == None or actionB == None:
-        print("NO")
-    elif actionA['type'] == actionB['type'] == 'insert':
+        return actionB
+    if actionA['type'] == actionB['type'] == 'insert':
+        if actionB['index'] == None:
+            print(actionB['type'])
+        if actionA['index'] == None:
+            print(actionA['type'])
         if actionA['index'] > actionB['index']:
             pass
         else:

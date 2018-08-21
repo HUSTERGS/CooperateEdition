@@ -26,12 +26,26 @@ def login():
 def rqversion(username, docname):
     #print('username = {}, docname = {}'.format(username, docname))
     cursor.execute(
-        "select * from docs where username = %s and docname = %s", (username, docname))
+        "select max(version) from docs where username = %s and docname = %s", (username, docname))
     result = cursor.fetchall()
-    # print(result)
-    return '0' if result == [] else str(result[0][2])
+    print(result)
+    print(type(str(result[0][0])))
+    return '0' if result[0][0] == None else str(result[0][0])
+
+# 请求最新版本
 
 
+@app.route('/<username>/<docname>/rqnewestdoc', methods=['GET', 'POST'])
+def rqnewestdoc(username, docname):
+    cursor.execute("select doc from docs where username = %s and docname = %s and version = (select max(version) from docs where username = %s and docname = %s)",
+                   (username, docname, username, docname))
+    result = cursor.fetchall()
+    print(result[0][0])
+    print(type(result[0][0]))
+    return jsonify('') if result[0][0] == None else jsonify(result[0][0])
+
+
+# merge changeset
 @app.route('/<username>/<docname>/merge', methods=['GET', 'POST'])
 def merge(username, docname):
     changeset = json.loads(request.get_data().decode())
@@ -41,8 +55,8 @@ def merge(username, docname):
     result = cursor.fetchall()
     curent_version = result[0][2]
     doc = result[0][4]
-    print('changeset.version = ', str(changeset['version']))
-    print('curent_version = ', str(curent_version))
+    #print('changeset.version = ', str(changeset['version']))
+    #print('curent_version = ', str(curent_version))
     if changeset['version'] == curent_version:
         newdoc = ot.applychangeset(changeset['actions'], doc)
         cursor.execute("insert into docs (username, docname, version, changeset, doc, date) values (%s, %s, %s, %s, %s, %s)",
