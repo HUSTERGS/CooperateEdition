@@ -22,10 +22,10 @@
             changeset.actions.push({
                 type: e.inputType.slice(0, 6),
                 content: e.data,
-                index: doc.selectionStart
+                index: e.inputType.slice(0, 6) === 'insert' ? doc.selectionStart - 1 : doc.selectionStart + 1
             })
-            console.log(changeset.actions)
-            console.log(JSON.stringify(changeset))
+            //console.log(changeset.actions)
+            //console.log(JSON.stringify(changeset))
         })
 
 
@@ -34,25 +34,100 @@
             fetch('/root/first trial/requestversion', {
                 method: 'GET'
             }).then(res => res.json().then(data => {
-                console.log(data)
-                changeset.localversion = Number(data)
-                console.log(changeset.localversion)
+                //console.log(data)
+                changeset.version = Number(data)
+                //console.log(changeset.version)
             }))
         }
 
         rqversion()
+        //发送changeset
         function sendData(changeset) {
             if (changeset.actions.length !== 0) {
                 fetch('/root/first trial/merge', {
                     method: 'POST',
                     body: JSON.stringify(changeset)
-                }).then(res => {
-                    console.log(res)
-                    changeset.actions = new Array()
-                    changeset.localversion++
-                })
+                }).then(res => res.json().then(data => {
+                    //console.log(data)
+                    console.log(changeset.actions)
+                    console.log(data)
+                    console.log(changeset.actions === [])
+                    if (changeset.actions === []) {
+                        console.log(",,,,,,")
+                        doc.value = localApply(data, doc.value)
+                        console.log(localApply(data, doc.value))
+                    }
+                }))
+                changeset.actions = new Array()
+                changeset.localversion++
             }
+
         }
+
+        function localApply(actions, doc) {
+            console.log("mmmm")
+            actions.forEach(element => {
+                console.log(element)
+                if (element.type = 'insert')
+                    doc = doc.slice(0, element.index) + element.content + doc.slice(element.index)
+                else if (element.type = 'delete')
+                    doc = doc.slice(0, element.index - 1) + doc.slice(element.index)
+            });
+        }
+
+        function localFollow(actionA, actionB) {
+            if (actionA === null || actionB === null)
+                ;
+            else if (actionA.type == 'insert' && actionB.type === 'insert') {
+                if (actionA.index > actionB.index)
+                    ;
+                else
+                    actionB.index--
+            }
+            else if (actionA.type === 'insert' && actionB.type === 'delete') {
+                if (actionA.index < actionB.index)
+                    actionB.index++
+                else
+                    ;
+            }
+            else if (action.type === 'delete' && action.type === 'insert') {
+                if (actionA.index > actionB.index)
+                    ;
+                else
+                    actionB.index--
+            }
+            else if (actionA.type === 'delete' && actionB.type === 'delete') {
+                if (actionA.index > actionB.index)
+                    ;
+                else if (actionA.indec > actionB.index)
+                    actionB.index--
+                else
+                    actionB = null
+            }
+            return actionB
+        }
+
+        function localOT(actionsA, actionsB) {
+            A_prime = []
+            temp = actionsA.slice()
+            temp.forEach(action => {
+                temp_action = action === null ? null : JSON.parse(JSON.stringify(action))
+                temp2 = []
+                temp.unshift(temp_action)
+                result = temp.reduce((actionA, actionB) => {
+                    temp_actionA = actionA === null ? null : JSON.parse(JSON.stringify(actionA))
+                    temp_actionB = actionB === null ? null : JSON.parse(JSON.stringify(actionB))
+                    temp2.append(localfollow(temp_actionB, temp_actionB))
+                    return follow(temp_actionA, temp_actionB)
+                })
+                A_prime.append(result)
+                temp = temp2
+            })
+            B_prime = temp2
+            return [A_prime, B_prime]
+        }
+
+
         setInterval(function () {
             sendData(changeset)
         }, 2000)

@@ -2,6 +2,9 @@ from flask import Flask, render_template, request, jsonify, redirect, url_for, s
 import mysql.connector
 import datetime
 import json
+
+import ot
+
 app = Flask(__name__)
 
 con = mysql.connector.connect(
@@ -9,64 +12,6 @@ con = mysql.connector.connect(
 )
 cursor = con.cursor()
 
-
-class Step(object):
-    def __init__(self, type, content, index):
-        self.type = type
-        self.content = content
-        self.index = index
-
-
-class Op(object):
-    def __init__(self, changeset, version):
-        self.changeset = changeset[:]
-        self.version = version
-
-
-def applychangeset(actions, doc):
-    for action in actions:
-        if action['type'] == 'insert':
-            doc = doc[:action['index']] + \
-                action['content'] + doc[action['index']:]
-        elif action['type'] == 'delete':
-            doc = doc[:action['index']-1] + doc[action['index']:]
-    return doc
-
-
-''' def follow(step1, step2):
-    if step1 == None or step2 == None:
-        return step2
-    if step1['type'] == step2['type'] == 'insert':
-        return Step('insert', step2['content'], step2['index'] if step1['index'] > step2['index'] else step2['index'] + 1)
-    elif step1['type'] == 'insert' and step2['type'] == 'delete':
-        return Step('delete', None, step2['index'] + 1 if step1['index'] < step2['index'] else step2['index'])
-    elif step1['type'] == 'delete' and step2['type'] == 'insert':
-        return Step('insert', step2['content'], step2['index'] if step1['index'] > step2['index'] else step2['index'] - 1)
-    elif step1['type'] == step2['type'] == 'delete':
-        if step1['index'] > step2['index']:
-            return Step('delete', None, step2['index'])
-        elif step2['index'] < step2['index']:
-            return Step('delete', None, step2['index'] - 1)
-        else:
-            return None'''
-
-
-def follow(step1, step2):
-    if step1 == None or step2 == None:
-        return step2
-    if step1.type == step2.type == 'insert':
-        return Step('insert', step2.content, step2.index if step1.index > step2.index else step2.index + 1)
-    elif step1.type == 'insert' and step2.type == 'delete':
-        return Step('delete', None, step2.index + 1 if step1.index < step2.index else step2.index)
-    elif step1.type == 'delete' and step2.type == 'insert':
-        return Step('insert', step2.content, step2.index if step1.index > step2.index else step2.index - 1)
-    elif step1.type == step2.type == 'delete':
-        if step1.index > step2.index:
-            return Step('delete', None, step2.index)
-        elif step2.index < step2.index:
-            return Step('delete', None, step2.index - 1)
-        else:
-            return None
 
 # table docs 顺序 username, docname, version, changeset, doc, date
 
@@ -79,32 +24,54 @@ def login():
 # 请求版本号
 @app.route('/<username>/<docname>/requestversion', methods=['GET', 'POST'])
 def rqversion(username, docname):
-    print('username = {}, docname = {}'.format(username, docname))
+    #print('username = {}, docname = {}'.format(username, docname))
     cursor.execute(
         "select * from docs where username = %s and docname = %s", (username, docname))
     result = cursor.fetchall()
-    print(result)
+    # print(result)
     return '0' if result == [] else str(result[0][2])
 
 
 @app.route('/<username>/<docname>/merge', methods=['GET', 'POST'])
 def merge(username, docname):
-    #str_changeset = request.get_data().decode()
     changeset = json.loads(request.get_data().decode())
+    #changeset = ot.Changeset(data['actions'], data['localversion'])
     cursor.execute(
         "select * from docs where username = %s and docname = %s and version = (select max(version) from docs where username = %s and docname = %s)", (username, docname, username, docname))
     result = cursor.fetchall()
     curent_version = result[0][2]
     doc = result[0][4]
-    print(changeset)
-    if changeset.localversion == curent_version:
-        newdoc = applychangeset(changeset.actions, doc)
+    print('changeset.version = ', str(changeset['version']))
+    print('curent_version = ', str(curent_version))
+    if changeset['version'] == curent_version:
+        newdoc = ot.applychangeset(changeset['actions'], doc)
         cursor.execute("insert into docs (username, docname, version, changeset, doc, date) values (%s, %s, %s, %s, %s, %s)",
-                       (username, docname, curent_version+1, str(changeset), newdoc, datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")))
+                       (username, docname, curent_version+1, str(changeset['actions']), newdoc, datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")))
         con.commit()
         print(newdoc)
-    # elif changeset.localversion
-    return '123'
+        return jsonify([])
+    elif changeset['version'] < curent_version:
+        cursor.execute(
+            "select changeset , version from docs where username = %s and docname = %s order by version asc", (username, docname))
+        server_changeset = []
+        for data in cursor.fetchall()[changeset['version']:]:
+            if data[0] != '':
+                result_changeset = eval(data[0])
+                for item in result_changeset:
+                    server_changeset.append(item)
+        # print(server_changeset)
+        response_changeset, server_changeset = ot.ot(
+            changeset['actions'], server_changeset)
+        #server_changeset = ot.ot(server_changeset, changeset['actions'])
+        newdoc = ot.applychangeset(server_changeset, doc)
+        print(newdoc)
+        #print(applychangeset(response_changeset, '789'))
+        cursor.execute("insert into docs (username, docname, version, changeset, doc, date) values (%s, %s, %s, %s, %s, %s)",
+                       (username, docname, curent_version+1, str(server_changeset), newdoc, datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")))
+        con.commit()
+        return jsonify(response_changeset)
+        # print(response_changeset)
+        # print(server_changeset)
 
 
 if __name__ == '__main__':
