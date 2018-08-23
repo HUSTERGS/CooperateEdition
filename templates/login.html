@@ -1,0 +1,130 @@
+<!doctype html>
+
+<head>
+    <meta charset="utf-8">
+    <title>登录</title>
+    <link rel="stylesheet" type="text/css" href="../static/style_for_login.css">
+    <style>
+        input[placeholder] {
+            width: 388px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            font-size: 14px;
+            padding: 10px;
+            height: 18px;
+            vertical-align: middle;
+            margin-bottom: 20px;
+        }
+
+        .main {
+            margin: 100px auto;
+        }
+
+        form {
+            width: 388px;
+            margin: 0 auto;
+        }
+
+        .button {
+            width: 39%;
+            margin: 0 21px;
+            height: 40px;
+        }
+
+        input[type="submit"] {
+            background-color: #00a7de;
+            border: 1px solid #0381aa;
+            color: #fff;
+        }
+
+        .buttons {
+            margin: 30px auto;
+            width: 410px;
+        }
+
+        p {
+            font-size: 50px;
+            margin: 20px auto;
+            text-align: center;
+        }
+
+        a {
+            text-decoration: none;
+            float: right;
+            color: #00a1d6;
+        }
+
+        a:hover {
+            color: rgb(251, 114, 153);
+        }
+
+        .flash {
+            position: relative;
+            background: rgb(251, 114, 153);
+            border-radius: 4px;
+            height: 30px;
+            font-size: 10px;
+            line-height: 30px;
+            width: 150px;
+            right: -420px;
+            top: 35px;
+            padding-left: 15px;
+        }
+    </style>
+</head>
+
+<body>
+    <div class="main">
+        <p class="head">登录</p>
+        <form method="POST" action='/userlogin'>
+            {% for message in get_flashed_messages(with_categories=True) %}
+            <div class="flash">
+                {{ message[1] }}
+            </div>
+            {% endfor %}
+            <label class="useremail">
+                <input type="text" name="useremail" autocomplete="off" maxlength="20" placeholder="你的邮箱" value={{useremail}}>
+            </label>
+
+            <br>
+            <label class="password">
+                <input type="password" name="password" value="" autocomplete="off" maxlength="20" placeholder="密码">
+            </label>
+            <br>
+
+
+            <a href="">忘记密码？</a>
+
+            <div class="buttons">
+                <input type="submit" value="登录" class="button">
+                <input type="button" value="注册" class="button">
+            </div>
+
+        </form>
+
+    </div>
+
+    <script>
+        //handle the input
+        var button = document.querySelector("input[type='submit']")
+        button.onclick = function (event) {
+            event.preventDefault()
+            if (document.querySelector("input[name='useremail']").value === "") {
+                alert("邮箱不能为空")
+                return
+            }
+            if (document.querySelector("input[name='password']").value === "") {
+                alert("密码不能为空")
+                return
+            }
+            document.querySelector("form").submit();
+        }
+
+        //register mode
+        let register = document.querySelector("input[type='button']")
+        register.addEventListener("click", function () {
+            window.location.href = '/register'
+        })
+
+    </script>
+</body>
