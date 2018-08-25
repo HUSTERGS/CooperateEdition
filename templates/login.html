@@ -4,73 +4,6 @@
     <meta charset="utf-8">
     <title>登录</title>
     <link rel="stylesheet" type="text/css" href="../static/style_for_login.css">
-    <style>
-        input[placeholder] {
-            width: 388px;
-            border: 1px solid #ddd;
-            border-radius: 4px;
-            font-size: 14px;
-            padding: 10px;
-            height: 18px;
-            vertical-align: middle;
-            margin-bottom: 20px;
-        }
-
-        .main {
-            margin: 100px auto;
-        }
-
-        form {
-            width: 388px;
-            margin: 0 auto;
-        }
-
-        .button {
-            width: 39%;
-            margin: 0 21px;
-            height: 40px;
-        }
-
-        input[type="submit"] {
-            background-color: #00a7de;
-            border: 1px solid #0381aa;
-            color: #fff;
-        }
-
-        .buttons {
-            margin: 30px auto;
-            width: 410px;
-        }
-
-        p {
-            font-size: 50px;
-            margin: 20px auto;
-            text-align: center;
-        }
-
-        a {
-            text-decoration: none;
-            float: right;
-            color: #00a1d6;
-        }
-
-        a:hover {
-            color: rgb(251, 114, 153);
-        }
-
-        .flash {
-            position: relative;
-            background: rgb(251, 114, 153);
-            border-radius: 4px;
-            height: 30px;
-            font-size: 10px;
-            line-height: 30px;
-            width: 150px;
-            right: -420px;
-            top: 35px;
-            padding-left: 15px;
-        }
-    </style>
 </head>
 
 <body>
@@ -82,8 +15,8 @@
                 {{ message[1] }}
             </div>
             {% endfor %}
-            <label class="useremail">
-                <input type="text" name="useremail" autocomplete="off" maxlength="20" placeholder="你的邮箱" value={{useremail}}>
+            <label class="username">
+                <input type="text" name="username" autocomplete="off" maxlength="20" placeholder="你的昵称" value={{username}}>
             </label>
 
             <br>
@@ -109,8 +42,8 @@
         var button = document.querySelector("input[type='submit']")
         button.onclick = function (event) {
             event.preventDefault()
-            if (document.querySelector("input[name='useremail']").value === "") {
-                alert("邮箱不能为空")
+            if (document.querySelector("input[name='username']").value === "") {
+                alert("用户名不能为空")
                 return
             }
             if (document.querySelector("input[name='password']").value === "") {

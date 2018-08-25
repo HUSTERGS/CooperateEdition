@@ -1,11 +1,12 @@
-from flask import Flask, render_template, request, jsonify, redirect, url_for, session
+from flask import Flask, render_template, request, jsonify, redirect, url_for, session, flash
 import mysql.connector
 import datetime
 import json
-
 import ot
 
 app = Flask(__name__)
+app.secret_key = 'UniqueStudioCooperationedit'
+
 
 con = mysql.connector.connect(
     user='root', password='MySQL#232', database='CooperationEdit', port=3305, use_unicode=True
@@ -17,12 +18,62 @@ cursor = con.cursor()
 
 
 @app.route('/', methods=['GET'])
+def editpage():
+    return render_template('editpage.html')
+
+# 请求登录页面
+
+
+@app.route('/login', methods=['GET'])
 def login():
-    return render_template('editepage.html')
+    return render_template('login.html')
+
+# 用户登录
 
 
-@app.route('/')
+@app.route('/userlogin', methods=['POST'])
+def userlogin():
+    username = request.form.get('username')
+    password = request.form.get('password')
+
+    cursor.execute(
+        "select * from userdetail where username = %s and pw = %s", (username, password))
+    result = cursor.fetchall()
+    if (result == []):
+        flash('用户名不存在或密码错误')
+        return render_template("login.html", **{'username': "" if (username == None) else username})
+
+    else:
+        print(result[0][0])
+        #session['login_user'] = result[0][0]
+        return redirect(url_for('editpage'))
+
+
+# 返回注册页面
+@app.route('/register', methods=['GET'])
+def register():
+    return render_template('register.html')
+
+
+@app.route('/userregister', methods=['POST'])
+def userregister():
+    username = request.form.get('username')
+    useremail = request.form.get('email')
+    password = request.form.get('password1')
+    cursor.execute("select * from userdetail where username = %s", (username,))
+    if (cursor.fetchall() == []):
+        cursor.execute("insert into userdetail (username, pw, email, rgtime) values (%s, %s, %s, %s)",
+                       (username, password, useremail, datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")))
+        con.commit()
+        print(username, useremail, password)
+        return redirect(url_for('login'))
+    else:
+        flash('该用户名已被使用')
+        return render_template('register.html', **{'username': "" if username == None else username})
+
 # 请求版本号
+
+
 @app.route('/<username>/<docname>/requestversion', methods=['GET', 'POST'])
 def rqversion(username, docname):
     #print('username = {}, docname = {}'.format(username, docname))
@@ -127,4 +178,7 @@ def merge(username, docname):
 
 
 if __name__ == '__main__':
+    app.jinja_env.auto_reload = True
+    app.config['TEMPLATES_AUTO_RELOAD'] = True
+    app.config['SEND_FILE_MAX_AGE_DEFAULT'] = datetime.timedelta(seconds=1)
     app.run(debug=True)

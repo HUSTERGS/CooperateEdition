@@ -10,8 +10,13 @@
     <div class="main">
         <p class="head">注册</p>
         <form method="POST" action='/userregister'>
-            <label class="user">
-                <input type="text" name="user" value="" autocomplete="off" maxlength="20" placeholder="昵称">
+            {% for message in get_flashed_messages(with_categories=True) %}
+            <div class="flash">
+                {{ message[1] }}
+            </div>
+            {% endfor %}
+            <label class="username">
+                <input type="text" name="username" autocomplete="off" maxlength="20" placeholder="昵称" value={{username}}>
             </label>
 
             <br>
@@ -38,7 +43,7 @@
         var button = document.querySelector("input[type='submit']")
         button.onclick = function (event) {
             event.preventDefault()
-            user = document.querySelector("input[name='user']").value;
+            user = document.querySelector("input[name='username']").value;
             pw1 = document.querySelector("input[name='password1']").value;
             pw2 = document.querySelector("input[name='password2']").value;
             email = document.querySelector("input[name='email']").value;
