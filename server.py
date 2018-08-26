@@ -35,105 +35,120 @@ cursor = con.cursor()
 def send_async_email(app, msg):
     with app.app_context():
         mail.send(msg)
-# table docs 顺序 username, docname, version, changeset, doc, date
 
 
 @app.route('/', methods=['GET'])
 def editpage():
     return render_template('editpage.html')
 
-# 请求登录页面
-
-
-@app.route('/login', methods=['GET'])
-def login():
-    return render_template('login.html')
-
 # 用户登录
 
 
-@app.route('/userlogin', methods=['POST'])
-def userlogin():
-    username = request.form.get('username')
-    password = request.form.get('password')
-    cursor.execute(
-        "select pw from userdetail where username = %s", (username, ))
-    result = cursor.fetchall()
-    print(result)
-    if result == []:
-        flash('用户名不存在')
-        return render_template("login.html", **{'username': "" if (username == None) else username})
-    elif not check_password_hash(result[0][0], password):
-        flash('密码错误')
-        return render_template("login.html", **{'username': "" if (username == None) else username})
-    else:
-        print(result[0][0])
-        # session['login_user'] = result[0][0]
-        return redirect(url_for('editpage'))
+@app.route('/login', methods=['POST', 'GET'])
+def login():
+    if request.method == 'GET':
+        return render_template('login.html')
+    elif request.method == 'POST':
+        username = request.form.get('username')
+        password = request.form.get('password')
+        cursor.execute(
+            "select pw from userdetail where username = %s", (username, ))
+        result = cursor.fetchall()
+        print(result)
+        if result == []:
+            flash('用户名不存在')
+            return render_template("login.html", **{'username': "" if (username == None) else username})
+        elif not check_password_hash(result[0][0], password):
+            flash('密码错误')
+            return render_template("login.html", **{'username': "" if (username == None) else username})
+        else:
+            print(result[0][0])
+            # session['login_user'] = result[0][0]
+            return redirect(url_for('editpage'))
 
-
-# 返回注册页面
-
-
-@app.route('/register', methods=['GET'])
-def register():
-    return render_template('register.html')
 
 # 处理注册请求
 
 
-@app.route('/userregister', methods=['POST'])
+@app.route('/register', methods=['POST', 'GET'])
 def userregister():
-    username = request.form.get('username')
-    useremail = request.form.get('email')
-    password = request.form.get('password1')
-    hashed_pw = generate_password_hash(
-        password, method='pbkdf2:sha1', salt_length=8)
-    cursor.execute("select * from userdetail where username = %s", (username,))
-    if (cursor.fetchall() == []):
-        cursor.execute('select max(id) from userdetail')
-        id = cursor.fetchall()[0][0]
-        cursor.execute("insert into userdetail (username, pw, email, rgtime, id) values (%s, %s, %s, %s, %s)",
-                       (username, hashed_pw, useremail, datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S"), id+1))
-        con.commit()
-        print(username, useremail, password)
-        return redirect(url_for('login'))
-    else:
-        flash('该用户名已被使用')
-        return render_template('register.html', **{'username': "" if username == None else username})
+    if request.method == 'GET':
+        return render_template('register.html')
+    elif request.method == 'POST':
+        username = request.form.get('username')
+        useremail = request.form.get('email')
+        password = request.form.get('password1')
+        hashed_pw = generate_password_hash(
+            password, method='pbkdf2:sha1', salt_length=8)
+        cursor.execute(
+            "select * from userdetail where username = %s", (username,))
+        if (cursor.fetchall() == []):
+            cursor.execute('select max(id) from userdetail')
+            id = cursor.fetchall()[0][0]
+            cursor.execute("insert into userdetail (username, pw, email, rgtime, id) values (%s, %s, %s, %s, %s)",
+                           (username, hashed_pw, useremail, datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S"), id+1))
+            con.commit()
+            print(username, useremail, password)
+            return redirect(url_for('login'))
+        else:
+            flash('该用户名已被使用')
+            return render_template('register.html', **{'username': "" if username == None else username})
 
 
-@app.route('/forgetpw', methods=['GET'])
-def forgetpw():
-    return render_template('resetpw.html')
+# 重置密码
 
 
-@app.route('/resetpw', methods=['POST'])
+@app.route('/resetpw', methods=['POST', 'GET'])
 def resetpw():
-    email = request.form.get('email')
-    cursor.execute(
-        "select username, id from userdetail where email = %s", (email,))
-    result = cursor.fetchall()
-    username = result[0][0]
-    id = result[0][1]
-    if result == []:
-        flash("您输入的邮箱不存在")
-    else:
-        '''print(os.environ.get('MAIL_USERNAME'), os.environ.get('MAIL_PASSWORD'))
-        msg = Message(subject="重置密码", sender=os.environ.get('MAIL_USERNAME'),
-                      recipients=[email])
-        msg.body = '重置密码'
-        msg.html = render_template('')
-        thread = Thread(target=send_async_email, args=[app, msg])
-        thread.start()
-        return "<h1>邮件发送成功</h1>"'''
-        pass
-    return render_template('resetpw_email.html', **{'username': username, 'token': Serializer(app.secret_key, 3600).dumps({'confirm': id})})
+    if request.method == 'GET':
+        return render_template('resetpw.html')
+    elif request.method == 'POST':
+        email = request.form.get('email')
+        cursor.execute(
+            "select username, id from userdetail where email = %s", (email,))
+        result = cursor.fetchall()
+        username = result[0][0]
+        id = result[0][1]
+        if result == []:
+            flash("您输入的邮箱不存在")
+        else:
+            print(os.environ.get('MAIL_USERNAME'),
+                  os.environ.get('MAIL_PASSWORD'))
+            msg = Message(subject="重置密码", sender=os.environ.get('MAIL_USERNAME'),
+                          recipients=[email])
+            msg.html = render_template('resetpw_email.html', **{
+                                       'username': username, 'token': Serializer(app.secret_key, 300).dumps({'confirm': id})})
+            thread = Thread(target=send_async_email, args=[app, msg])
+            thread.start()
+            return "<h1>密码重置邮件发送成功，五分钟内有效，请注意查收</h1>"
+        # return render_template('resetpw_email.html', **{'username': username, 'token': Serializer(app.secret_key, 3600).dumps({'confirm': id})})
 
 
-@app.route('/<username>/resetpw/<token>')
+@app.route('/<username>/resetpw/<token>', methods=['GET', 'POST'])
 def email_resetpw(username, token):
-    pass
+    if request.method == 'POST':
+        s = Serializer(app.secret_key)
+        cursor.execute(
+            "select id from userdetail where username=%s", (username,))
+        id = cursor.fetchall()[0][0]
+        try:
+            data = s.loads(token)
+        except:
+            return '略略略'
+        if data.get('confirm') != id:
+            return '略略略'
+        else:
+            newpw = request.form.get('newpw')
+            hashed_newpw = generate_password_hash(
+                newpw, method='pbkdf2:sha1', salt_length=8)
+            cursor.execute(
+                "update userdetail set pw = %s where username = %s", (hashed_newpw, username))
+            con.commit()
+            flash('密码修改成功')
+            return redirect(url_for('login'))
+    elif request.method == 'GET':
+        return render_template('setnewpw.html', **{'url': request.url})
+
     # 请求版本号
 
 

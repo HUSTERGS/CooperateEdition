@@ -10,7 +10,7 @@
 <body>
     <div class="main">
         <p class="head">登录</p>
-        <form method="POST" action='/userlogin'>
+        <form method="POST" action='/login'>
             {% for message in get_flashed_messages(with_categories=True) %}
             <div class="flash">
                 {{ message[1] }}
@@ -27,7 +27,7 @@
             <br>
 
 
-            <a href="/forgetpw">忘记密码？</a>
+            <a href="/resetpw">忘记密码？</a>
 
             <div class="buttons">
                 <input type="submit" value="登录" class="button">
