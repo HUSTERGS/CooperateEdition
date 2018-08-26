@@ -3,10 +3,28 @@ import mysql.connector
 import datetime
 import json
 import ot
+from werkzeug.security import generate_password_hash, check_password_hash
+from itsdangerous import TimedJSONWebSignatureSerializer as Serializer
+from flask_mail import Mail, Message
+from threading import Thread
+import os
 
 app = Flask(__name__)
 app.secret_key = 'UniqueStudioCooperationedit'
+app.jinja_env.auto_reload = True
+app.config['TEMPLATES_AUTO_RELOAD'] = True
+app.config['SEND_FILE_MAX_AGE_DEFAULT'] = datetime.timedelta(seconds=1)
+app.config['MAIL_SERVER'] = 'smtp.qq.com'
+app.config['MAIL_PORT'] = 465
+app.config['MAIL_USE_TLS'] = False
+app.config['MAIL_USE_SSL'] = True
+# 获取环境变量中的账号和密码
+app.config['MAIL_USERNAME'] = os.environ.get('MAIL_USERNAME')
+app.config['MAIL_PASSWORD'] = os.environ.get('MAIL_PASSWORD')
+# app.config['MAIL_DEBUG'] = True
+app.config['MAIL_SUPPRESS_SEND'] = False
 
+mail = Mail(app)
 
 con = mysql.connector.connect(
     user='root', password='MySQL#232', database='CooperationEdit', port=3305, use_unicode=True
@@ -14,6 +32,9 @@ con = mysql.connector.connect(
 cursor = con.cursor()
 
 
+def send_async_email(app, msg):
+    with app.app_context():
+        mail.send(msg)
 # table docs 顺序 username, docname, version, changeset, doc, date
 
 
@@ -35,24 +56,30 @@ def login():
 def userlogin():
     username = request.form.get('username')
     password = request.form.get('password')
-
     cursor.execute(
-        "select * from userdetail where username = %s and pw = %s", (username, password))
+        "select pw from userdetail where username = %s", (username, ))
     result = cursor.fetchall()
-    if (result == []):
-        flash('用户名不存在或密码错误')
+    print(result)
+    if result == []:
+        flash('用户名不存在')
         return render_template("login.html", **{'username': "" if (username == None) else username})
-
+    elif not check_password_hash(result[0][0], password):
+        flash('密码错误')
+        return render_template("login.html", **{'username': "" if (username == None) else username})
     else:
         print(result[0][0])
-        #session['login_user'] = result[0][0]
+        # session['login_user'] = result[0][0]
         return redirect(url_for('editpage'))
 
 
 # 返回注册页面
+
+
 @app.route('/register', methods=['GET'])
 def register():
     return render_template('register.html')
+
+# 处理注册请求
 
 
 @app.route('/userregister', methods=['POST'])
@@ -60,10 +87,14 @@ def userregister():
     username = request.form.get('username')
     useremail = request.form.get('email')
     password = request.form.get('password1')
+    hashed_pw = generate_password_hash(
+        password, method='pbkdf2:sha1', salt_length=8)
     cursor.execute("select * from userdetail where username = %s", (username,))
     if (cursor.fetchall() == []):
-        cursor.execute("insert into userdetail (username, pw, email, rgtime) values (%s, %s, %s, %s)",
-                       (username, password, useremail, datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")))
+        cursor.execute('select max(id) from userdetail')
+        id = cursor.fetchall()[0][0]
+        cursor.execute("insert into userdetail (username, pw, email, rgtime, id) values (%s, %s, %s, %s, %s)",
+                       (username, hashed_pw, useremail, datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S"), id+1))
         con.commit()
         print(username, useremail, password)
         return redirect(url_for('login'))
@@ -71,12 +102,44 @@ def userregister():
         flash('该用户名已被使用')
         return render_template('register.html', **{'username': "" if username == None else username})
 
-# 请求版本号
+
+@app.route('/forgetpw', methods=['GET'])
+def forgetpw():
+    return render_template('resetpw.html')
+
+
+@app.route('/resetpw', methods=['POST'])
+def resetpw():
+    email = request.form.get('email')
+    cursor.execute(
+        "select username, id from userdetail where email = %s", (email,))
+    result = cursor.fetchall()
+    username = result[0][0]
+    id = result[0][1]
+    if result == []:
+        flash("您输入的邮箱不存在")
+    else:
+        '''print(os.environ.get('MAIL_USERNAME'), os.environ.get('MAIL_PASSWORD'))
+        msg = Message(subject="重置密码", sender=os.environ.get('MAIL_USERNAME'),
+                      recipients=[email])
+        msg.body = '重置密码'
+        msg.html = render_template('')
+        thread = Thread(target=send_async_email, args=[app, msg])
+        thread.start()
+        return "<h1>邮件发送成功</h1>"'''
+        pass
+    return render_template('resetpw_email.html', **{'username': username, 'token': Serializer(app.secret_key, 3600).dumps({'confirm': id})})
+
+
+@app.route('/<username>/resetpw/<token>')
+def email_resetpw(username, token):
+    pass
+    # 请求版本号
 
 
 @app.route('/<username>/<docname>/requestversion', methods=['GET', 'POST'])
 def rqversion(username, docname):
-    #print('username = {}, docname = {}'.format(username, docname))
+    # print('username = {}, docname = {}'.format(username, docname))
     cursor.execute(
         "select max(version) from docs where username = %s and docname = %s", (username, docname))
     result = cursor.fetchall()
@@ -107,7 +170,7 @@ def rqnewestdoc(username, docname):
     else:
         return jsonify(None)
 
-    #result = cursor.fetchall()
+    # result = cursor.fetchall()
     # print(result[0][0])
 
     # print(type(result[0][0]))
@@ -133,7 +196,7 @@ def firstdoc(username, docname):
 @app.route('/<username>/<docname>/merge', methods=['GET', 'POST'])
 def merge(username, docname):
     changeset = json.loads(request.get_data().decode())
-    #changeset = ot.Changeset(data['actions'], data['localversion'])
+    # changeset = ot.Changeset(data['actions'], data['localversion'])
     cursor.execute(
         "select * from docs where username = %s and docname = %s and version = (select max(version) from docs where username = %s and docname = %s)", (username, docname, username, docname))
     result = cursor.fetchall()
@@ -143,8 +206,8 @@ def merge(username, docname):
     print(type(changeset['version']))
     print(curent_version)
     print(type(curent_version))
-    #print('changeset.version = ', str(changeset['version']))
-    #print('curent_version = ', str(curent_version))
+    # print('changeset.version = ', str(changeset['version']))
+    # print('curent_version = ', str(curent_version))
     if changeset['version'] == curent_version:
         print("现在版本相同")
         newdoc = ot.applychangeset(changeset['actions'], doc)
@@ -165,10 +228,10 @@ def merge(username, docname):
         # print(server_changeset)
         response_changeset, server_changeset = ot.ot(
             changeset['actions'], server_changeset)
-        #server_changeset = ot.ot(server_changeset, changeset['actions'])
+        # server_changeset = ot.ot(server_changeset, changeset['actions'])
         newdoc = ot.applychangeset(server_changeset, doc)
         print(newdoc)
-        #print(applychangeset(response_changeset, '789'))
+        # print(applychangeset(response_changeset, '789'))
         cursor.execute("insert into docs (username, docname, version, changeset, doc, date) values (%s, %s, %s, %s, %s, %s)",
                        (username, docname, curent_version+1, str(server_changeset), newdoc, datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")))
         con.commit()
@@ -178,7 +241,5 @@ def merge(username, docname):
 
 
 if __name__ == '__main__':
-    app.jinja_env.auto_reload = True
-    app.config['TEMPLATES_AUTO_RELOAD'] = True
-    app.config['SEND_FILE_MAX_AGE_DEFAULT'] = datetime.timedelta(seconds=1)
+
     app.run(debug=True)
