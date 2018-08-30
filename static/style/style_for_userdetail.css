@@ -1,0 +1,118 @@
+body {
+  margin: 0;
+  background: #f5f6f7;
+  width: 100%;
+}
+
+.slider-li {
+  width: 100%;
+  height: 25px;
+  font-size: 14px;
+  margin-bottom: 10px;
+  line-height: 25px;
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+}
+
+li {
+  display: list-item;
+  margin: 0;
+  padding: 0;
+}
+
+.slider {
+  position: fixed;
+  display: inline-block;
+  margin: 40px 0 0 40px;
+  width: 93px;
+}
+
+ul {
+  list-style: none;
+  padding: 0;
+}
+
+.iconfont {
+  margin: -3px 8px 0;
+}
+
+a {
+  text-decoration: none;
+  color: black;
+  cursor: pointer;
+}
+
+.doclist-content {
+  display: block;
+  padding-left: 200px;
+  /*width: 100%;*/
+  height: 100%;
+  padding-bottom: 71px;
+}
+
+.content-top {
+  font-size: 24px;
+  height: 55px;
+  vertical-align: bottom;
+  padding: 55px 0 0 0;
+}
+
+.doc-selected a {
+  color: #00a7de;
+}
+
+.top-bar {
+  height: 44px;
+  padding: 8px 18px 10px 20px;
+  background: white;
+  width: 100%;
+  box-sizing: border-box;
+}
+
+.button-list {
+  margin-left: auto;
+  margin-right: 0;
+  width: 280px;
+  display: flex;
+}
+
+.newdoc,
+.logout {
+  border-radius: 2px;
+  background-color: #0d88fb;
+  color: #fff;
+  opacity: 1;
+  width: 76px;
+  height: 30px;
+  font-size: 14px;
+  user-select: none;
+  text-align: center;
+  vertical-align: middle;
+  white-space: nowrap;
+  border: 1px solid transparent;
+  margin: 0 10px;
+}
+
+.logout {
+  color: black;
+  background-color: #f5f6f7;
+}
+
+.newdoc:hover {
+  opacity: 0.8;
+}
+
+.usericon {
+  height: 28px;
+  width: 28px;
+  margin: 0 10px;
+}
+
+.user {
+  display: flex;
+  text-align: center;
+  vertical-align: middle;
+  line-height: 28px;
+  user-select: none;
+}

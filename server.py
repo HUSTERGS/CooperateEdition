@@ -6,8 +6,13 @@ import ot
 from werkzeug.security import generate_password_hash, check_password_hash
 from itsdangerous import TimedJSONWebSignatureSerializer as Serializer
 from flask_mail import Mail, Message
+from flask_login import login_required, UserMixin, login_user, LoginManager, logout_user, current_user
 from threading import Thread
 import os
+import hashlib
+import identicon
+import random
+from glob import glob
 
 app = Flask(__name__)
 app.secret_key = 'UniqueStudioCooperationedit'
@@ -23,9 +28,12 @@ app.config['MAIL_USERNAME'] = os.environ.get('MAIL_USERNAME')
 app.config['MAIL_PASSWORD'] = os.environ.get('MAIL_PASSWORD')
 # app.config['MAIL_DEBUG'] = True
 app.config['MAIL_SUPPRESS_SEND'] = False
+app.config['JSON_AS_ASCII'] = False
 
 mail = Mail(app)
-
+login_manager = LoginManager()
+login_manager.init_app(app)
+login_manager.login_view = "login"
 con = mysql.connector.connect(
     user='root', password='MySQL#232', database='CooperationEdit', port=3305, use_unicode=True
 )
@@ -35,6 +43,33 @@ cursor = con.cursor()
 def send_async_email(app, msg):
     with app.app_context():
         mail.send(msg)
+
+
+class User(UserMixin):
+    def __init__(self, userdetail):
+        self.username = userdetail[0]
+        self.pw = userdetail[1]
+        self.email = userdetail[2]
+        self.rgtime = userdetail[3]
+        self.id = userdetail[4]
+
+
+def gen_avatar_batch(code, size, dir):
+    img = identicon.render_identicon(code, 16)
+    img.save(dir + '%s_%s.png' % (code, size))
+
+def gen_unique_num(date):
+    datenum = date.replace("-",'').replace(':','').replace(' ','')
+    randomNum=random.randint(0,100)
+    if randomNum <= 10:
+        randomNum = str(0) + str(randomNum)
+    uniqueNum= datenum + str(randomNum)
+    return uniqueNum
+
+@login_manager.user_loader
+def load_user(user_id):
+    cursor.execute("select * from userdetail where id = %s", (user_id,))
+    return User(cursor.fetchall()[0])
 
 
 @app.route('/', methods=['GET'])
@@ -47,6 +82,8 @@ def editpage():
 @app.route('/login', methods=['POST', 'GET'])
 def login():
     if request.method == 'GET':
+        if current_user.is_authenticated:
+            return redirect(url_for('userdetail', username = current_user.username))
         return render_template('login.html')
     elif request.method == 'POST':
         username = request.form.get('username')
@@ -62,9 +99,16 @@ def login():
             flash('密码错误')
             return render_template("login.html", **{'username': "" if (username == None) else username})
         else:
+            cursor.execute(
+                "select * from userdetail where username = %s", (username,))
+
             print(result[0][0])
+            user = User(cursor.fetchall()[0])
+            login_user(user)
+            #session['username'] = username
             # session['login_user'] = result[0][0]
-            return redirect(url_for('editpage'))
+            print(user.rgtime)
+            return redirect(url_for('userdetail', username = user.username))
 
 
 # 处理注册请求
@@ -85,19 +129,37 @@ def userregister():
         if (cursor.fetchall() == []):
             cursor.execute('select max(id) from userdetail')
             id = cursor.fetchall()[0][0]
+            date = str(datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S"))
             cursor.execute("insert into userdetail (username, pw, email, rgtime, id) values (%s, %s, %s, %s, %s)",
-                           (username, hashed_pw, useremail, datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S"), id+1))
+                           (username, hashed_pw, useremail, date, id+1))
+            cursor.execute("insert into userdocs (username, docs, lastedit, friends) values (%s, %s, %s, %s)", (username, str([]), '', str([])))
             con.commit()
-            print(username, useremail, password)
+            #服务端生成用户图片
+            os.mkdir('./static/usericon/'+username)
+            dirloc = "./static/usericon/"+username+'/'
+            uniquenum = gen_unique_num(date)
+            gen_avatar_batch(uniquenum, 16, dirloc)
+            
             return redirect(url_for('login'))
         else:
             flash('该用户名已被使用')
             return render_template('register.html', **{'username': "" if username == None else username})
 
 
+
+
+@app.route('/userdetail/<username>')
+@login_required
+def userdetail(username):
+    dirloc = './static/usericon/' + username + '/' + '*.png'
+    glob(dirloc)
+    # + str(user.rgtime).replace("-",'').replace(':','').replace(' ','') + '_16.png'
+    print(dirloc)
+    print(glob(dirloc))
+    return render_template('userdetail.html', **{'user_icon_url': '.' + glob(dirloc)[0].replace('\\', '/')})
+    
+    
 # 重置密码
-
-
 @app.route('/resetpw', methods=['POST', 'GET'])
 def resetpw():
     if request.method == 'GET':
@@ -107,11 +169,12 @@ def resetpw():
         cursor.execute(
             "select username, id from userdetail where email = %s", (email,))
         result = cursor.fetchall()
-        username = result[0][0]
-        id = result[0][1]
         if result == []:
             flash("您输入的邮箱不存在")
+            return render_template('resetpw.html')
         else:
+            username = result[0][0]
+            id = result[0][1]
             print(os.environ.get('MAIL_USERNAME'),
                   os.environ.get('MAIL_PASSWORD'))
             msg = Message(subject="重置密码", sender=os.environ.get('MAIL_USERNAME'),
@@ -120,10 +183,11 @@ def resetpw():
                                        'username': username, 'token': Serializer(app.secret_key, 300).dumps({'confirm': id})})
             thread = Thread(target=send_async_email, args=[app, msg])
             thread.start()
-            return "<h1>密码重置邮件发送成功，五分钟内有效，请注意查收</h1>"
+            flash("重置邮件已发送，五分钟内有效")
+            return redirect(url_for('login'))
         # return render_template('resetpw_email.html', **{'username': username, 'token': Serializer(app.secret_key, 3600).dumps({'confirm': id})})
 
-
+# 邮件中的重置密码链接
 @app.route('/<username>/resetpw/<token>', methods=['GET', 'POST'])
 def email_resetpw(username, token):
     if request.method == 'POST':
@@ -149,7 +213,7 @@ def email_resetpw(username, token):
     elif request.method == 'GET':
         return render_template('setnewpw.html', **{'url': request.url})
 
-    # 请求版本号
+# 请求版本号
 
 
 @app.route('/<username>/<docname>/requestversion', methods=['GET', 'POST'])
@@ -255,6 +319,68 @@ def merge(username, docname):
         # print(server_changeset)
 
 
+@app.route('/userdoc/<username>/<target>')
+@login_required
+def rspuserdoc(username, target):
+    if target == 'all-docs':
+        cursor.execute(
+            "select docs from userdocs where username = %s", (username,))
+        docs = eval(cursor.fetchall()[0][0])
+    elif target == 'mydocs':
+        cursor.execute(
+            "select docs from userdocs where username = %s", (username,))
+        docs = eval(cursor.fetchall()[0][0])
+    elif target == 'share-with-me':
+        cursor.execute(
+            "select docs from userdocs where username = %s", (username,))
+        docs = eval(cursor.fetchall()[0][0])
+    elif target == 'garbage':
+        cursor.execute(
+            "select docs from userdocs where username = %s", (username,))
+        docs = eval(cursor.fetchall()[0][0])
+    return jsonify(docs)
+
+
+@app.route('/userdoc/<username>/new', methods=['GET', 'POST'])
+@login_required
+def newdoc(username):
+    docname = '无标题文档'
+    print(username)
+    cursor.execute(
+        "select docs from userdocs where username = %s", (username,))
+    docs = eval(cursor.fetchall()[0][0])
+    print(type(docs))
+    # 如果名称重复
+    num = 1
+    newname = docname
+    while newname in docs:
+        newname = docname
+        newname = newname + '(' + num + ')'
+        num += 1
+    resp = {
+        'docname': newname,
+        'username': username
+    }
+    docs.append(newname)
+    cursor.execute("update userdocs set docs = %s where username = %s",
+                   (str(docs), username))
+    con.commit()
+    return render_template('editpage.html', **{'data': str(resp)})
+
+
+@app.route('/logout')  # logout and pop out user data
+@login_required
+def logout():
+    logout_user()
+    return redirect(url_for('login'))
+
+
+@app.context_processor  # handler
+def my_context_processor():
+    login_user = session.get('username', '')
+    return {'login_user': login_user}
+
+
 if __name__ == '__main__':
 
-    app.run(debug=True)
+    app.run(debug=True, host='0.0.0.0')

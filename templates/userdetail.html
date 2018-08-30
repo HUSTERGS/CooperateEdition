@@ -1,0 +1,97 @@
+<!doctype html>
+<html>
+
+<head>
+    <link href="../static/style/style_for_userdetail.css" rel="stylesheet" type="text/css">
+    <link rel="stylesheet" type="text/css" href="../static/style/font_6b7jqogl3uy/iconfont.css">
+    <meta charset="utf-8">
+    <style>
+        .usericon {
+            background: url({{user_icon_url}});
+            background-size: 100%;
+        }
+    </style>
+</head>
+
+<body>
+    <div class="top-bar" d={{current_user.username}}>
+        <div class="button-list">
+            <button class="newdoc">新建</button>
+            <button class="logout">注销</button>
+            <div class="user">
+                <div class="usericon"></div>
+                <div class="username">{{current_user.username}}</div>
+            </div>
+        </div>
+    </div>
+    <div class="slider">
+        <ul>
+            <li title="全部文档" class="slider-li all-docs doc-selected">
+                <a>
+                    <span class="iconfont icon-document"></span>全部文档
+                </a>
+            </li>
+            <li title="我创建的" class="slider-li mydocs">
+                <a>
+                    <span class="iconfont icon-iconfontren"></span>我创建的
+                </a>
+            </li>
+            <li title="与我共享" class="slider-li share-with-me">
+                <a>
+                    <span class="iconfont icon-duorenyonghu-copy"></span>与我共享
+                </a>
+            </li>
+            <li class="slider-hor-line"></li>
+            <li title="回收站" class="slider-li garbage">
+                <a>
+                    <span class="iconfont icon-huishouzhan"></span>回收站
+                </a>
+            </li>
+        </ul>
+    </div>
+    <div class="doclist-content">
+        <div class="content">
+            <div class="content-top">
+                全部文档
+            </div>
+            <div class="list-wrapper">
+
+            </div>
+        </div>
+    </div>
+    <script>
+        let username = document.querySelector(".top-bar").getAttribute("d")
+        function rqlist(username, target) {
+            fetch('/userdoc/' + username + '/' + target, {
+                method: 'GET',
+                credentials: "include"
+            }).then(res =>
+                res.json().then(data => {
+                    console.log(data)
+                })
+            );
+        }
+
+        document.querySelectorAll(".slider-li").forEach(element => {
+            element.addEventListener("click", function () {
+                if (document.querySelector(".doc-selected")) {
+                    document.querySelector(".doc-selected").classList.remove("doc-selected")
+                    this.classList.add("doc-selected")
+                }
+
+                let target = this.classList[1]
+                let title = this.getAttribute("title")
+                document.querySelector(".content-top").innerHTML = title
+
+            })
+        });
+        document.querySelector(".logout").addEventListener("click", () => {
+            window.location.href = '/logout'
+        })
+        document.querySelector(".newdoc").addEventListener("click", () => {
+            window.location.href = '/userdoc/' + username + '/new'
+        })
+    </script>
+</body>
+
+</html>

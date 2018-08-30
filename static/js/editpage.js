@@ -3,6 +3,9 @@ var changeset = new Object();
 changeset.actions = new Array();
 changeset.version = 0;
 doc = document.querySelector("textarea");
+docdata = eval(doc.getAttribute("d"));
+
+/*
 doc.addEventListener("input", e => {
   changeset.actions.push({
     type: e.inputType.slice(0, 6),
@@ -131,4 +134,5 @@ function localOT(actionsA, actionsB) {
 
 setInterval(function() {
   sendData(changeset);
-}, 500);
+}, 500)
+*/

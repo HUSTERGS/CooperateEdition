@@ -2,13 +2,89 @@
 
 <head>
     <meta charset="utf-8">
+    <style>
+        input[placeholder] {
+            width: 388px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            font-size: 14px;
+            padding: 10px;
+            height: 18px;
+            vertical-align: middle;
+            margin-bottom: 20px;
+        }
+
+        body {
+            margin: 100px auto;
+        }
+
+        form {
+            width: 388px;
+            margin: 0 auto;
+        }
+
+
+        input[type="submit"] {
+            width: 410px;
+            margin: 0 auto;
+            height: 40px;
+            background-color: #00a7de;
+            border: 1px solid #0381aa;
+            color: #fff;
+        }
+
+        p {
+            font-size: 50px;
+            margin: 20px auto;
+            text-align: center;
+        }
+
+        .flash {
+            position: relative;
+            background: rgb(251, 114, 153);
+            border-radius: 4px;
+            height: 30px;
+            font-size: 10px;
+            line-height: 30px;
+            width: 150px;
+            right: -420px;
+            top: 35px;
+        }
+
+        span {
+            padding-left: 20px;
+        }
+    </style>
 </head>
 
 <body>
+    <p>重置密码</p>
     <form action="/resetpw" , method="POST">
+        {% for message in get_flashed_messages(with_categories=True) %}
+        <div class="flash">
+            <span>{{ message[1] }}</span>
+        </div>
+        {% endfor %}
         <label for="email">
             <input type="email" name="email" autocomplete="off" , placeholder="请输入你的邮箱">
         </label>
         <input type="submit" value="提交">
     </form>
+    <script>
+        let button = document.querySelector("input[type='submit']")
+        let email = document.querySelector("input[type='email']")
+        var reg = /^[a-z0-9]+([._\\-]*[a-z0-9])*@([a-z0-9]+[-a-z0-9]*[a-z0-9]+.){1,63}[a-z0-9]+$/;
+        button.onclick = function (event) {
+            event.preventDefault()
+            if (email.value === '') {
+                alert("请输入邮箱")
+                return
+            }
+            if (!reg.test(email.value)) {
+                alert("请填入正确的邮箱")
+                return
+            }
+            document.querySelector("form").submit()
+        }
+    </script>
 </body>
