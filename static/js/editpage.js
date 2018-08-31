@@ -3,7 +3,7 @@ var changeset = new Object();
 changeset.actions = new Array();
 changeset.version = 0;
 doc = document.querySelector("textarea");
-docdata = eval(doc.getAttribute("d"));
+//docdata = eval(doc.getAttribute("d"));
 
 /*
 doc.addEventListener("input", e => {

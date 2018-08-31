@@ -66,6 +66,7 @@ def gen_unique_num(date):
     uniqueNum= datenum + str(randomNum)
     return uniqueNum
 
+
 @login_manager.user_loader
 def load_user(user_id):
     cursor.execute("select * from userdetail where id = %s", (user_id,))
@@ -156,7 +157,8 @@ def userdetail(username):
     # + str(user.rgtime).replace("-",'').replace(':','').replace(' ','') + '_16.png'
     print(dirloc)
     print(glob(dirloc))
-    return render_template('userdetail.html', **{'user_icon_url': '.' + glob(dirloc)[0].replace('\\', '/')})
+    current_user.icon_url = '.' + glob(dirloc)[0].replace('\\', '/')
+    return render_template('userdetail.html', **{'user_icon_url': current_user.icon_url})
     
     
 # 重置密码
@@ -355,7 +357,7 @@ def newdoc(username):
     newname = docname
     while newname in docs:
         newname = docname
-        newname = newname + '(' + num + ')'
+        newname = newname + '(' + str(num) + ')'
         num += 1
     resp = {
         'docname': newname,
@@ -365,7 +367,8 @@ def newdoc(username):
     cursor.execute("update userdocs set docs = %s where username = %s",
                    (str(docs), username))
     con.commit()
-    return render_template('editpage.html', **{'data': str(resp)})
+    dirloc = './static/usericon/' + username + '/' + '*.png'
+    return render_template('editpage.html', **{'data': str(resp), 'user_icon_url': '../../' + glob(dirloc)[0].replace('\\', '/')})
 
 
 @app.route('/logout')  # logout and pop out user data

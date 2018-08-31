@@ -3,17 +3,18 @@
 
 <head>
     <meta charset="utf-8">
+    <link rel="stylesheet" type="text/css" href="../../static/style/style_for_editpage.css">
     <style>
-        #editearea {
-            height: 100px;
-            width: 400px;
+        .usericon {
+            background: url({{user_icon_url}});
+            background-size: 100%;
         }
     </style>
     <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
 </head>
 
 <body>
-    <div class="status_bar">
+    <!--<div class="status_bar">
         {% if current_user.is_authenticated %}
 
         <li>
@@ -31,11 +32,35 @@
             <a href="{{ url_for('login') }}"> 登录 &nbsp;</a>
         </li>
         {% endif %}
+    </div>-->
+    <div class="top-bar" d={{current_user.username}}>
+        <input value="{{title}}">
+        <div class="button-list">
+            <button class="share">分享</button>
+            <button class="permission">权限</button>
+            <button class="logout">注销</button>
+            <div class="user">
+                <div class="usericon"></div>
+                <div class="username">{{current_user.username}}</div>
+            </div>
+        </div>
     </div>
-    <div id="editor"></div>
-    <textarea type="text" id="editearea" d={{data}}></textarea>
-    <div class="view"></div>
-    <script src="../static/js/editpage.js"></script>
+    <div class="editorwrap">
+        <pre id="editor" class="editearea"></pre>
+        <!--<textarea type="text" class="editearea" id="editor" d={{data}}></textarea>-->
+        <div class="view"></div>
+    </div>
+    <script src="../../static/js/src-noconflict/ace.js"></script>
+    <script>
+        var editor = ace.edit("editor")
+        editor.setTheme("ace/theme/twilight")
+        editor.session.setMode("ace/mode/markdown")
+        container = document.querySelector('.view')
+        document.querySelector("textarea").addEventListener("input", function () {
+            container.innerHTML = marked(this.value)
+        })
+    </script>
+    <script src="../../static/js/editpage.js"></script>
 </body>
 
 </html>
