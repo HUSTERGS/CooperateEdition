@@ -224,8 +224,8 @@ def rqversion(username, docname):
     cursor.execute(
         "select max(version) from docs where username = %s and docname = %s", (username, docname))
     result = cursor.fetchall()
-    print(result)
-    print(type(str(result[0][0])))
+    #print(result)
+    #print(type(str(result[0][0])))
     return '0' if result[0][0] == None else str(result[0][0])
 
 # 请求最新版本
@@ -267,6 +267,7 @@ def rqnewestdoc(username, docname):
 
 @app.route('/<username>/<docname>/firstdoc')
 def firstdoc(username, docname):
+    print(username, docname)
     cursor.execute("select doc from docs where username = %s and docname = %s and version = (select max(version) from docs where username = %s and docname = %s)",
                    (username, docname, username, docname))
     return jsonify(cursor.fetchall()[0][0])
@@ -277,18 +278,22 @@ def firstdoc(username, docname):
 @app.route('/<username>/<docname>/merge', methods=['GET', 'POST'])
 def merge(username, docname):
     changeset = json.loads(request.get_data().decode())
+    print(changeset['actions'])
+    print(username,docname)
     # changeset = ot.Changeset(data['actions'], data['localversion'])
     cursor.execute(
         "select * from docs where username = %s and docname = %s and version = (select max(version) from docs where username = %s and docname = %s)", (username, docname, username, docname))
     result = cursor.fetchall()
     curent_version = int(result[0][2])
     doc = result[0][4]
-    print(changeset['version'])
-    print(type(changeset['version']))
-    print(curent_version)
-    print(type(curent_version))
+    #print(changeset['version'])
+    #print(type(changeset['version']))
+    #print(curent_version)
+    #print(type(curent_version))
     # print('changeset.version = ', str(changeset['version']))
     # print('curent_version = ', str(curent_version))
+
+    print(changeset['actions'])
     if changeset['version'] == curent_version:
         print("现在版本相同")
         newdoc = ot.applychangeset(changeset['actions'], doc)
@@ -359,16 +364,15 @@ def newdoc(username):
         newname = docname
         newname = newname + '(' + str(num) + ')'
         num += 1
-    resp = {
-        'docname': newname,
-        'username': username
-    }
+
     docs.append(newname)
     cursor.execute("update userdocs set docs = %s where username = %s",
                    (str(docs), username))
+    cursor.execute("insert into docs (username, docname, version, changeset, doc, date) values (%s, %s, %s, %s, %s, %s)",
+                       (username, newname, 0 , '[]' , '', datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")))
     con.commit()
     dirloc = './static/usericon/' + username + '/' + '*.png'
-    return render_template('editpage.html', **{'data': str(resp), 'user_icon_url': '../../' + glob(dirloc)[0].replace('\\', '/')})
+    return render_template('editpage.html', **{'username': username, 'docname': newname, 'user_icon_url': '../../' + glob(dirloc)[0].replace('\\', '/')})
 
 
 @app.route('/logout')  # logout and pop out user data
@@ -386,4 +390,4 @@ def my_context_processor():
 
 if __name__ == '__main__':
 
-    app.run(debug=True, host='0.0.0.0')
+    app.run(debug=True)

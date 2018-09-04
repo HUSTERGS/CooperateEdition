@@ -1,8 +1,42 @@
 var viewpannel = document.querySelector(".view");
 var changeset = new Object();
+var editor = ace.edit("editor");
+var editorwrap = document.querySelector(".editorwrap");
+var username = editorwrap.getAttribute("username");
+var docname = editorwrap.getAttribute("docname");
 changeset.actions = new Array();
 changeset.version = 0;
-doc = document.querySelector("textarea");
+
+//var doc = document.querySelector("textarea");
+editor.setTheme("ace/theme/twilight");
+editor.session.setMode("ace/mode/markdown");
+container = document.querySelector(".view");
+
+function wrapAction(e, length) {
+  var wrapedResult = {};
+  if (e.action === "insert") {
+    wrapedResult.type = "insert";
+    wrapedResult.index = length - 1;
+    wrapedResult.content = e.lines[0];
+  } else if (e.action === "remove") {
+    wrapedResult.type = "delete";
+    wrapedResult.index = length + 1;
+    wrapedResult.content = e.lines[0];
+  } else {
+    wrapedResult.type = null;
+    wrapedResult.index = null;
+    wrapedResult.content = e.lines[0];
+  }
+  return wrapedResult;
+}
+
+editor.on("change", e => {
+  container.innerHTML = marked(editor.getValue());
+  console.log(e);
+  console.log(editor.getValue().length);
+  //console.log(wrapAction(e, editor.getValue().length));
+  changeset.actions.push(wrapAction(e, editor.getValue().length));
+});
 //docdata = eval(doc.getAttribute("d"));
 
 /*
@@ -19,31 +53,45 @@ doc.addEventListener("input", e => {
   //console.log(JSON.stringify(changeset))
 });
 //请求最新版本
-
+*/
 rqversion();
 
 function rqnewestdoc() {
-  fetch("/root/first trial/rqnewestdoc", {
+  let url = "/" + username + "/" + docname + "/rqnewestdoc";
+  fetch(url, {
     method: "POST",
     body: JSON.stringify(changeset.version)
   }).then(res =>
     res.json().then(data => {
-      if (data) doc.value = data;
+      if (data) {
+        print("收到的最新data为" + data);
+        //doc.value = data;
+        let temp = changeset.actions;
+        changeset.actions = null;
+        editor.setValue(data);
+        changeset.actions = temp;
+      }
     })
   );
 }
 function firstdoc() {
-  fetch("/root/first trial/firstdoc", {
+  let url = "/" + username + "/" + docname + "/firstdoc";
+  fetch(url, {
     method: "GET"
   }).then(res =>
     res.json().then(data => {
-      doc.value = data;
+      //doc.value = data
+      let temp = changeset.actions;
+      changeset.actions = null;
+      editor.setValue(data);
+      changeset.actions = temp;
     })
   );
 }
 //请求版本号
 function rqversion() {
-  fetch("/root/first trial/requestversion", {
+  let url = "/" + username + "/" + docname + "/requestversion";
+  fetch(url, {
     method: "GET"
   }).then(res2 =>
     res2.json().then(data => {
@@ -58,16 +106,24 @@ function rqversion() {
 
 //发送changeset
 function sendData(changeset) {
+  /*if (changeset.actions.length !== 0) {
+    console.log(changeset);
+    changeset.actions = new Array();
+  }*/
+  //console.log(changeset);
   if (changeset.actions.length !== 0) {
     console.log(changeset.actions);
-    fetch("/root/first trial/merge", {
+    let url = "/" + username + "/" + docname + "/" + "merge";
+    fetch(url, {
       method: "POST",
       body: JSON.stringify(changeset)
     }).then(res => {
       res.json().then(data => {
-        console.log(Boolean(changeset.actions.length === 0));
-        if (changeset.actions === []) {
-          doc.value = localApply(data, doc.value);
+        //console.log(Boolean(changeset.actions.length === 0));
+        if (changeset.actions.length === 0 && data.length !== 0) {
+          editor.setValue(localApply(data, editor.getValue()));
+          changeset.actions = new Array();
+          //doc.value = localApply(data, doc.value);
         }
       });
     });
@@ -134,5 +190,4 @@ function localOT(actionsA, actionsB) {
 
 setInterval(function() {
   sendData(changeset);
-}, 500)
-*/
+}, 2000);

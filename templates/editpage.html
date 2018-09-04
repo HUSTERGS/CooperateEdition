@@ -45,20 +45,14 @@
             </div>
         </div>
     </div>
-    <div class="editorwrap">
+    <div class="editorwrap" docname={{docname}} username={{username}}>
         <pre id="editor" class="editearea"></pre>
         <!--<textarea type="text" class="editearea" id="editor" d={{data}}></textarea>-->
         <div class="view"></div>
     </div>
     <script src="../../static/js/src-noconflict/ace.js"></script>
     <script>
-        var editor = ace.edit("editor")
-        editor.setTheme("ace/theme/twilight")
-        editor.session.setMode("ace/mode/markdown")
-        container = document.querySelector('.view')
-        document.querySelector("textarea").addEventListener("input", function () {
-            container.innerHTML = marked(this.value)
-        })
+
     </script>
     <script src="../../static/js/editpage.js"></script>
 </body>
