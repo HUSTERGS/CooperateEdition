@@ -116,3 +116,32 @@ a {
   line-height: 28px;
   user-select: none;
 }
+
+.list-wrapper {
+  width: 90%;
+  background: white;
+  max-height: 400px;
+  overflow: auto;
+}
+
+ul {
+  margin: 0;
+}
+
+.doc-list {
+  height: 50px;
+  width: 100%;
+  list-style: none;
+  background: white;
+  border: 2px rgba(0, 0, 0, 0.05) solid;
+  vertical-align: middle;
+  line-height: 50px;
+  box-sizing: border-box;
+  padding: 0 10px;
+  user-select: none;
+  cursor: pointer;
+}
+
+.doc-list:hover {
+  background: rgba(117, 167, 184, 0.05);
+}

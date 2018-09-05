@@ -55,12 +55,17 @@
                 全部文档
             </div>
             <div class="list-wrapper">
-
+                <!--<ul>
+                    <li class="sample-list">噜啦啦？</li>
+                    <li class="sample-list">噜啦啦</li>
+                </ul>-->
             </div>
         </div>
     </div>
     <script>
         let username = document.querySelector(".top-bar").getAttribute("d")
+        let list_wrapper = document.querySelector(".list-wrapper")
+        rqmydocs()
         function rqlist(username, target) {
             fetch('/userdoc/' + username + '/' + target, {
                 method: 'GET',
@@ -99,6 +104,14 @@
                 res.json().then(data => {
                     if (data) {
                         console.log(data)
+                        var doclist = document.createElement("ul")
+                        data.forEach(doc => {
+                            let el = document.createElement("li")
+                            el.setAttribute("class", "doc-list")
+                            el.innerHTML = doc
+                            doclist.appendChild(el)
+                        })
+                        list_wrapper.appendChild(doclist)
                     }
                 })
             );
