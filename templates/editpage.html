@@ -4,35 +4,10 @@
 <head>
     <meta charset="utf-8">
     <link rel="stylesheet" type="text/css" href="../../static/style/style_for_editpage.css">
-    <style>
-        .usericon {
-            background: url({{user_icon_url}});
-            background-size: 100%;
-        }
-    </style>
     <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
 </head>
 
 <body>
-    <!--<div class="status_bar">
-        {% if current_user.is_authenticated %}
-
-        <li>
-            <a href="{{ url_for('logout') }}"> 注销 </a>
-        </li>
-        <li>
-            <a href="#">用户:{{ current_user.username }} &nbsp;</a>
-        </li>
-        {% else %}
-
-        <li>
-            <a href="{{ url_for('userregister') }}"> 注册</a>
-        </li>
-        <li>
-            <a href="{{ url_for('login') }}"> 登录 &nbsp;</a>
-        </li>
-        {% endif %}
-    </div>-->
     <div class="top-bar" d={{current_user.username}}>
         <input value="{{title}}">
         <div class="button-list">
@@ -40,7 +15,7 @@
             <button class="permission">权限</button>
             <button class="logout">注销</button>
             <div class="user">
-                <div class="usericon"></div>
+                <div class="usericon" style="background: url({{user_icon_url}});background-size: 100%;"></div>
                 <div class="username">{{current_user.username}}</div>
             </div>
         </div>
@@ -52,6 +27,20 @@
     </div>
     <script src="../../static/js/src-noconflict/ace.js"></script>
     <script>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
     </script>
     <script src="../../static/js/editpage.js"></script>

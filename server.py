@@ -74,8 +74,9 @@ def load_user(user_id):
 
 
 @app.route('/', methods=['GET'])
-def editpage():
-    return render_template('editpage.html')
+def index():
+    return redirect(url_for('login'))
+    #return render_template('editpage.html')
 
 # 用户登录
 
@@ -241,8 +242,8 @@ def rqnewestdoc(username, docname):
     cursor.execute(
         "select max(version) from docs where username = %s and docname = %s", (username, docname))
     version = cursor.fetchall()[0][0]
-    print(version)
-    print(int(request.get_data().decode()))
+    #print(version)
+    #print(int(request.get_data().decode()))
     print(version == int(request.get_data().decode()))
     if version > int(request.get_data().decode()):
         cursor.execute("select doc from docs where username = %s and docname = %s and version = (select max(version) from docs where username = %s and docname = %s)",
@@ -280,6 +281,7 @@ def merge(username, docname):
     changeset = json.loads(request.get_data().decode())
     print(changeset['actions'])
     print(username,docname)
+    print(type(changeset))
     # changeset = ot.Changeset(data['actions'], data['localversion'])
     cursor.execute(
         "select * from docs where username = %s and docname = %s and version = (select max(version) from docs where username = %s and docname = %s)", (username, docname, username, docname))
@@ -292,7 +294,9 @@ def merge(username, docname):
     #print(type(curent_version))
     # print('changeset.version = ', str(changeset['version']))
     # print('curent_version = ', str(curent_version))
-
+    for action in changeset['actions']:
+        if action['content'] == None:
+            action['content'] = '\n'
     print(changeset['actions'])
     if changeset['version'] == curent_version:
         print("现在版本相同")
@@ -324,6 +328,7 @@ def merge(username, docname):
         return jsonify(response_changeset)
         # print(response_changeset)
         # print(server_changeset)
+    #return jsonify(None)
 
 
 @app.route('/userdoc/<username>/<target>')
@@ -345,6 +350,7 @@ def rspuserdoc(username, target):
         cursor.execute(
             "select docs from userdocs where username = %s", (username,))
         docs = eval(cursor.fetchall()[0][0])
+    docs.reverse()
     return jsonify(docs)
 
 
@@ -371,8 +377,15 @@ def newdoc(username):
     cursor.execute("insert into docs (username, docname, version, changeset, doc, date) values (%s, %s, %s, %s, %s, %s)",
                        (username, newname, 0 , '[]' , '', datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")))
     con.commit()
+    
+    return redirect(url_for('editpage', username = username,  docname = newname))
+    #return render_template('editpage.html', **{'username': username, 'docname': newname, 'user_icon_url': '../../' + glob(dirloc)[0].replace('\\', '/')})
+
+@app.route('/<username>/<docname>/edit')
+@login_required
+def editpage(username, docname):
     dirloc = './static/usericon/' + username + '/' + '*.png'
-    return render_template('editpage.html', **{'username': username, 'docname': newname, 'user_icon_url': '../../' + glob(dirloc)[0].replace('\\', '/')})
+    return render_template('editpage.html', **{'username': username, 'docname': docname, 'user_icon_url': '../../' + glob(dirloc)[0].replace('\\', '/')})
 
 
 @app.route('/logout')  # logout and pop out user data

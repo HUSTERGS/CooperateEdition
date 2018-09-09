@@ -89,3 +89,38 @@ def applychangeset(actions, doc):
             elif action['type'] == 'delete':
                 doc = doc[:action['index']-1] + doc[action['index']:]
     return doc
+
+
+
+'''def follow(actionA, actionB):
+    if actionA == None or actionB == None:
+        return actionB
+    if actionA['end']['row'] > actionB['start']['row'] or actionB['end']['row'] > actionA['start']['row']:
+        return actionB
+    else:
+        if actionA['action'] == actionB['action'] == 'insert':
+            if actionA['end']['row'] < actionB['start']['row']:
+                actionB['start']['column'] += actionA['end']['column']
+            if actionA['index'] > actionB['index']:
+                pass
+            else:
+                actionB['index'] += 1
+        elif actionA['type'] == 'insert' and actionB['type'] == 'delete':
+            if actionA['index'] < actionB['index']:
+                actionB['index'] += 1
+            else:
+                pass
+        elif actionA['type'] == 'delete' and actionB['type'] == 'insert':
+            if actionA['index'] > actionB['index']:
+                pass
+            else:
+                actionB['index'] -= 1
+        elif actionA['type'] == actionB['type'] == 'delete':
+            if actionA['index'] > actionB['index']:
+                pass
+            elif actionB['index'] < actionB['index']:
+                actionB['index'] -= 1
+            else:
+                actionB = None
+        return actionB'''
+    

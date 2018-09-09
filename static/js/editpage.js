@@ -17,11 +17,11 @@ function wrapAction(e, length) {
   if (e.action === "insert") {
     wrapedResult.type = "insert";
     wrapedResult.index = length - 1;
-    wrapedResult.content = e.lines[0];
+    wrapedResult.content = e.lines.length === 2 ? null : e.lines[0];
   } else if (e.action === "remove") {
     wrapedResult.type = "delete";
     wrapedResult.index = length + 1;
-    wrapedResult.content = e.lines[0];
+    wrapedResult.content = e.lines.length === 2 ? null : e.lines[0];
   } else {
     wrapedResult.type = null;
     wrapedResult.index = null;
@@ -30,12 +30,13 @@ function wrapAction(e, length) {
   return wrapedResult;
 }
 
+
 editor.on("change", e => {
   container.innerHTML = marked(editor.getValue());
   console.log(e);
   console.log(editor.getValue().length);
-  //console.log(wrapAction(e, editor.getValue().length));
   changeset.actions.push(wrapAction(e, editor.getValue().length));
+  //changeset.actions.push(e)
 });
 //docdata = eval(doc.getAttribute("d"));
 
@@ -64,11 +65,11 @@ function rqnewestdoc() {
   }).then(res =>
     res.json().then(data => {
       if (data) {
-        print("收到的最新data为" + data);
+        console.log("收到的最新data为" + data);
         //doc.value = data;
         let temp = changeset.actions;
-        changeset.actions = null;
-        editor.setValue(data);
+        changeset.actions = [];
+        editor.setValue(data, 1);
         changeset.actions = temp;
       }
     })
@@ -82,8 +83,8 @@ function firstdoc() {
     res.json().then(data => {
       //doc.value = data
       let temp = changeset.actions;
-      changeset.actions = null;
-      editor.setValue(data);
+      changeset.actions = [];
+      editor.setValue(data, 1);
       changeset.actions = temp;
     })
   );
@@ -121,7 +122,7 @@ function sendData(changeset) {
       res.json().then(data => {
         //console.log(Boolean(changeset.actions.length === 0));
         if (changeset.actions.length === 0 && data.length !== 0) {
-          editor.setValue(localApply(data, editor.getValue()));
+          editor.setValue(localApply(data, editor.getValue()), 1);
           changeset.actions = new Array();
           //doc.value = localApply(data, doc.value);
         }
@@ -188,6 +189,6 @@ function localOT(actionsA, actionsB) {
   return [A_prime, B_prime];
 }
 
-setInterval(function() {
+setInterval(function () {
   sendData(changeset);
 }, 2000);

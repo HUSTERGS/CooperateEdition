@@ -112,9 +112,17 @@
                             doclist.appendChild(el)
                         })
                         list_wrapper.appendChild(doclist)
+                        setListener(Array.prototype.slice.call(doclist.childNodes))
                     }
                 })
             );
+        }
+        function setListener(doclist) {
+            doclist.forEach(el => {
+                el.addEventListener("click", function () {
+                    window.location.href = '/' + username + '/' + this.innerHTML + '/edit'
+                })
+            })
         }
     </script>
 </body>
